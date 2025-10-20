@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en" class="transition-all duration-500 ease-in-out">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Measurement Converter</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Poppins and Inter Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+    
+    <!-- Configure Tailwind for custom colors, fonts, and dark mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'accent-primary': '#4F46E5', // Indigo
+                        'accent-secondary': '#10B981', // Teal
+                        'bg-light': '#F9FAFB',
+                        'text-light': '#1F2937',
+                        'bg-dark': '#111827',
+                        'text-dark': '#F9FAFB',
+                    },
+                    fontFamily: {
+                        heading: ['Poppins', 'Inter', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom CSS for Background Gradients, Glassmorphism, and Polish -->
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease-in-out;
+            /* Light Mode Gradient: Soft Sky Blue -> White */
+            background: radial-gradient(at 70% 20%, #eff6ff 0%, #F9FAFB 100%);
+            min-height: 100vh;
+        }
+
+        /* Dark Mode Gradient: Deep Navy -> Purple */
+        .dark body {
+            background: radial-gradient(at 70% 20%, #370d62 0%, #111827 100%);
+        }
+
+        /* Glassmorphism Effect for the Main Card */
+        .glass-card {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            /* Light Mode Glass */
+            background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent white */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(140, 152, 237, 0.3); /* Soft indigo shadow */
+        }
+        
+        /* Dark Mode Glass */
+        .dark .glass-card {
+            background-color: rgba(31, 41, 55, 0.5); /* Semi-transparent dark */
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        /* Custom scrollbar for category tabs */
+        #category-tabs-container {
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+        }
+        #category-tabs-container::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        /* Styling for unit selectors (Dropdowns and Input) */
+        .unit-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%234F46E5'%3e%3cpath d='M7 8l3 3 3-3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 0.8em;
+        }
+
+    </style>
+</head>
+<body class="text-text-light dark:text-text-dark transition-colors duration-500 p-4 md:p-10 font-body">
+
+    <div id="app" class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8 md:mb-12 pt-4">
+            <div class="flex items-center space-x-3">
+                <!-- App Logo (Simple Icon) -->
+                <span class="text-4xl text-accent-primary dark:text-accent-secondary font-extrabold shadow-lg rounded-full p-1 leading-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 20h14"></path><path d="M10 20l-1-4V4l1-4"></path>
+                        <path d="M14 20l1-4V4l-1-4"></path>
+                    </svg>
+                </span>
+                <h1 class="text-3xl md:text-4xl font-heading font-extrabold text-accent-primary dark:text-text-dark tracking-wide">
+                    Universal Converter
+                </h1>
+            </div>
+            
+            <!-- Dark Mode Toggle -->
+            <button id="dark-mode-toggle" class="p-3 rounded-full bg-white dark:bg-gray-800 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105" aria-label="Toggle theme">
+                <!-- Icon Placeholder - Filled by JS on load -->
+            </button>
+        </header>
+
+        <!-- Main Converter Card (Glassmorphism Applied) -->
+        <div class="glass-card rounded-3xl p-6 md:p-10 transition-all duration-500 shadow-2xl">
+
+            <!-- Search and Category Title -->
+            <div class="mb-8 space-y-4">
+                 <h2 id="selected-category-title" class="text-xl md:text-2xl font-heading font-semibold text-accent-primary dark:text-accent-secondary transition-colors duration-300">Select a Category</h2>
+                <input type="text" id="category-search" placeholder="Search categories or units..."
+                       class="w-full p-4 rounded-xl border border-gray-300/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 text-lg focus:ring-accent-primary focus:border-accent-primary transition-all shadow-inner-lg"
+                       oninput="filterCategories(this.value)">
+            </div>
+
+            <!-- Category Tabs/Selector -->
+            <div id="category-tabs-container" class="mb-8 overflow-x-auto whitespace-nowrap py-2 border-b border-gray-300/50 dark:border-gray-700/50">
+                <div id="category-tabs" class="inline-flex space-x-3 pb-2">
+                    <!-- Category buttons will be inserted here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Converter Inputs and Result -->
+            <div class="space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
+                    
+                    <!-- Input Value (FROM) & Dropdown -->
+                    <div class="md:col-span-2 space-y-2">
+                        <label for="input-value" class="block text-sm font-body font-medium text-gray-700 dark:text-gray-300">Convert From</label>
+                        <input type="number" id="input-value" value="1" placeholder="Enter value"
+                               class="unit-select w-full p-4 text-2xl font-semibold rounded-2xl border-2 border-accent-primary/60 dark:border-accent-primary/80 bg-white/80 dark:bg-gray-900/80 text-text-light dark:text-text-dark focus:ring-accent-primary focus:border-accent-primary transition-all shadow-lg"
+                               oninput="calculateConversion()" onchange="calculateConversion()"
+                               aria-label="Value to convert">
+                        
+                        <select id="from-unit" class="unit-select w-full p-4 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-accent-primary focus:border-accent-primary cursor-pointer text-base shadow-md mt-2"
+                                onchange="calculateConversion()" aria-label="Select unit to convert from">
+                            <!-- Options populated by JS -->
+                        </select>
+                    </div>
+
+                    <!-- Swap Button -->
+                    <div class="flex justify-center items-end md:h-full py-4 md:py-0">
+                        <button id="swap-units-btn" onclick="swapUnits()"
+                                class="p-4 bg-accent-primary dark:bg-accent-secondary text-white rounded-full shadow-xl hover:bg-indigo-700 dark:hover:bg-teal-400 transition-all duration-300 transform hover:scale-110 active:scale-95"
+                                aria-label="Swap units">
+                            <!-- Double Arrow Icon (Lucide: Repeat2) -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                                <path d="m2 9 3 3 3-3"></path><path d="M13 18h7"></path>
+                                <path d="M22 15l-3-3-3 3"></path><path d="M4 6h14"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- To Unit Dropdown (Result is shown here on mobile) -->
+                    <div class="md:col-span-2 space-y-2">
+                         <label for="to-unit" class="block text-sm font-body font-medium text-gray-700 dark:text-gray-300">Convert To</label>
+                         <div class="p-4 text-2xl font-semibold rounded-2xl bg-gray-100/70 dark:bg-gray-800/70 border border-accent-secondary/60 dark:border-accent-secondary/80 flex justify-between items-center shadow-lg">
+                            <p id="result-value" class="text-3xl font-extrabold text-accent-secondary dark:text-accent-secondary truncate transition-all duration-300">0</p>
+                            <button id="copy-result-btn" onclick="copyResult()"
+                                class="p-2 bg-gray-200/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-100 rounded-lg hover:bg-gray-300/80 dark:hover:bg-gray-600/80 transition-all duration-300 shadow-md flex items-center ml-2"
+                                aria-label="Copy result to clipboard">
+                                <!-- Copy Icon (Lucide: Copy) -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <select id="to-unit" class="unit-select w-full p-4 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-accent-primary focus:border-accent-primary cursor-pointer text-base shadow-md mt-2"
+                                onchange="calculateConversion()" aria-label="Select unit to convert to">
+                            <!-- Options populated by JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Formula Display -->
+                <div class="p-4 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl border border-gray-300/30 dark:border-gray-700/30 shadow-inner">
+                    <p id="formula-display" class="text-base italic text-gray-600 dark:text-gray-400">Select units and enter a value to see the formula.</p>
+                </div>
+            </div>
+
+        </div> <!-- End Main Converter Card -->
+
+        <!-- Status Message (Alert Box) -->
+        <div id="status-message" role="alert" aria-live="polite" class="fixed bottom-6 right-6 bg-accent-secondary text-white p-4 rounded-xl shadow-2xl opacity-0 transition-all duration-500 transform translate-y-4 pointer-events-none font-body font-semibold">
+            Result copied! 🎉
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-gray-500 dark:text-gray-600 text-sm opacity-80">
+            © 2025 | Built by [Your Name] | All rights reserved.
+        </footer>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- 1. DATA: Conversion Factors and Categories ---
+        const CONVERTERS = {
+            'Length / Distance': { baseUnit: 'm', icon: '📏', units: { 'mm': 0.001, 'cm': 0.01, 'm': 1, 'km': 1000, 'inch': 0.0254, 'foot': 0.3048, 'yard': 0.9144, 'mile': 1609.34 } },
+            'Weight / Mass': { baseUnit: 'kg', icon: '⚖️', units: { 'mg': 1e-6, 'g': 0.001, 'kg': 1, 'ton': 1000, 'oz': 0.0283495, 'lb': 0.453592 } },
+            'Volume / Capacity': { baseUnit: 'm³', icon: '💧', units: { 'ml': 1e-6, 'L': 0.001, 'cm³': 1e-6, 'm³': 1, 'teaspoon': 4.92892e-6, 'tablespoon': 14.7868e-6, 'cup': 0.000236588, 'pint': 0.000473176, 'gallon': 0.00378541 } },
+            'Temperature': { baseUnit: 'C', icon: '🌡️', units: { 'Celsius': null, 'Fahrenheit': null, 'Kelvin': null } },
+            'Area': { baseUnit: 'm²', icon: '🖼️', units: { 'mm²': 1e-6, 'cm²': 0.0001, 'm²': 1, 'km²': 1e6, 'ft²': 0.092903, 'yd²': 0.836127, 'acre': 4046.86, 'hectare': 10000 } },
+            'Time': { baseUnit: 'second', icon: '⏱️', units: { 'second': 1, 'minute': 60, 'hour': 3600, 'day': 86400, 'week': 604800, 'month': 2629800, 'year': 31557600 } },
+            'Speed': { baseUnit: 'm/s', icon: '⚡', units: { 'm/s': 1, 'km/h': 1 / 3.6, 'mph': 0.44704, 'knot': 0.514444 } },
+            'Energy': { baseUnit: 'joule', icon: '💡', units: { 'joule': 1, 'calorie': 4.184, 'kWh': 3.6e6, 'watt-hour': 3600 } },
+            'Pressure': { baseUnit: 'Pa', icon: '💨', units: { 'Pa': 1, 'kPa': 1000, 'bar': 100000, 'psi': 6894.76, 'atm': 101325 } },
+            'Data Storage': { baseUnit: 'byte', icon: '💾', units: { 'bit': 1 / 8, 'byte': 1, 'KB': 1024, 'MB': 1024 ** 2, 'GB': 1024 ** 3, 'TB': 1024 ** 4 } },
+            'Force': { baseUnit: 'newton', icon: '💪', units: { 'newton': 1, 'kilogram-force': 9.80665, 'pound-force': 4.44822 } },
+            'Angle': { baseUnit: 'radian', icon: '📐', units: { 'degree': Math.PI / 180, 'radian': 1, 'gradian': Math.PI / 200 } }
+        };
+
+        // --- 2. STATE MANAGEMENT & DOM ELEMENTS ---
+        let currentCategory = Object.keys(CONVERTERS)[0];
+        let isDarkMode = false;
+
+        const $ = id => document.getElementById(id);
+        const $html = document.documentElement;
+        const $tabsContainer = $('category-tabs');
+        const $fromUnit = $('from-unit');
+        const $toUnit = $('to-unit');
+        const $inputValue = $('input-value');
+        const $resultValue = $('result-value');
+        const $formulaDisplay = $('formula-display');
+        const $categoryTitle = $('selected-category-title');
+        const $darkModeToggle = $('dark-mode-toggle');
+        const $statusMessage = $('status-message');
+        const allCategoryNames = Object.keys(CONVERTERS);
+
+
+        // --- 3. CORE CONVERSION LOGIC ---
+
+        function convertTemperature(value, fromUnit, toUnit) {
+            let celsius;
+            switch (fromUnit) {
+                case 'Celsius': celsius = value; break;
+                case 'Fahrenheit': celsius = (value - 32) * 5 / 9; break;
+                case 'Kelvin': celsius = value - 273.15; break;
+                default: return NaN;
+            }
+            switch (toUnit) {
+                case 'Celsius': return celsius;
+                case 'Fahrenheit': return (celsius * 9 / 5) + 32;
+                case 'Kelvin': return celsius + 273.15;
+                default: return NaN;
+            }
+        }
+
+        function convertLinear(value, fromUnit, toUnit, categoryData) {
+            const factorFrom = categoryData.units[fromUnit];
+            const factorTo = categoryData.units[toUnit];
+            if (factorFrom === undefined || factorTo === undefined || isNaN(value)) return NaN;
+            return (value * factorFrom) / factorTo;
+        }
+
+        function calculateConversion() {
+            const value = parseFloat($inputValue.value);
+            const fromUnit = $fromUnit.value;
+            const toUnit = $toUnit.value;
+
+            if (isNaN(value) || !fromUnit || !toUnit) {
+                $resultValue.textContent = 'Invalid';
+                $formulaDisplay.textContent = 'Please enter a valid number.';
+                return;
+            }
+
+            const categoryData = CONVERTERS[currentCategory];
+            let result;
+            let formulaText;
+
+            if (currentCategory === 'Temperature') {
+                result = convertTemperature(value, fromUnit, toUnit);
+                formulaText = `Formula: ${fromUnit} → ${toUnit} (Non-linear conversion)`;
+            } else {
+                result = convertLinear(value, fromUnit, toUnit, categoryData);
+
+                if (fromUnit === toUnit) {
+                    formulaText = 'Conversion not necessary (Same units)';
+                } else {
+                    const factorFrom = categoryData.units[fromUnit];
+                    const factorTo = categoryData.units[toUnit];
+                    const ratio = factorFrom / factorTo;
+                    formulaText = `1 ${fromUnit} = ${ratio.toPrecision(7).replace(/\.?0+$/, '')} ${toUnit}`;
+                }
+            }
+
+            if (isNaN(result)) {
+                $resultValue.textContent = 'Error';
+                $formulaDisplay.textContent = 'Conversion logic failed.';
+            } else {
+                // Ensure scientific notation is used for very large/small numbers
+                const formattedResult = (result > 1e6 || result < 1e-6)
+                    ? result.toPrecision(8)
+                    : result.toFixed(6).replace(/\.?0+$/, '');
+                
+                $resultValue.textContent = formattedResult;
+                $formulaDisplay.textContent = formulaText;
+            }
+        }
+
+
+        // --- 4. UI INTERACTION FUNCTIONS ---
+
+        function selectCategory(categoryName) {
+            currentCategory = categoryName;
+            const category = CONVERTERS[categoryName];
+            $categoryTitle.textContent = `${category.icon} ${categoryName}`;
+
+            $fromUnit.innerHTML = '';
+            $toUnit.innerHTML = '';
+            const units = Object.keys(category.units);
+
+            units.forEach((unit, index) => {
+                const fromOption = document.createElement('option');
+                fromOption.value = unit;
+                fromOption.textContent = unit;
+                $fromUnit.appendChild(fromOption);
+
+                const toOption = document.createElement('option');
+                toOption.value = unit;
+                toOption.textContent = unit;
+                if (units.length > 1 && index === 1) { toOption.selected = true; }
+                $toUnit.appendChild(toOption);
+            });
+
+            // Update tab styling with smooth transition
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                const isActive = tab.getAttribute('data-category') === categoryName;
+                if (isActive) {
+                    tab.classList.remove('bg-gray-200/50', 'dark:bg-gray-800/50', 'text-gray-700', 'dark:text-gray-400', 'hover:bg-gray-300/80');
+                    tab.classList.add('bg-accent-primary', 'text-white', 'shadow-lg');
+                } else {
+                    tab.classList.remove('bg-accent-primary', 'text-white', 'shadow-lg');
+                    tab.classList.add('bg-gray-200/50', 'dark:bg-gray-800/50', 'text-gray-700', 'dark:text-gray-400', 'hover:bg-gray-300/80');
+                }
+            });
+
+            calculateConversion();
+        }
+
+        function renderCategories(categories = allCategoryNames) {
+            $tabsContainer.innerHTML = '';
+            categories.forEach(categoryName => {
+                const category = CONVERTERS[categoryName];
+                const button = document.createElement('button');
+                button.setAttribute('data-category', categoryName);
+                button.classList.add(
+                    'category-tab', 'p-2', 'px-5', 'rounded-full', 'text-sm', 'font-body', 'font-medium',
+                    'transition-all', 'duration-300', 'flex-shrink-0', 'whitespace-nowrap', 'shadow-md',
+                    'focus:ring-2', 'focus:ring-offset-2', 'focus:ring-accent-primary'
+                );
+                button.textContent = `${category.icon} ${categoryName}`;
+                button.onclick = () => selectCategory(categoryName);
+                $tabsContainer.appendChild(button);
+            });
+
+            if (categories.includes(currentCategory)) {
+                selectCategory(currentCategory);
+            } else if (categories.length > 0) {
+                selectCategory(categories[0]);
+            } else {
+                $categoryTitle.textContent = 'No Converters Found';
+                $fromUnit.innerHTML = '';
+                $toUnit.innerHTML = '';
+                $resultValue.textContent = '0';
+                $formulaDisplay.textContent = '';
+            }
+        }
+
+        function filterCategories(query) {
+            const normalizedQuery = query.toLowerCase().trim();
+            
+            const filteredCategories = allCategoryNames.filter(name =>
+                name.toLowerCase().includes(normalizedQuery) ||
+                Object.keys(CONVERTERS[name].units).some(unit => unit.toLowerCase().includes(normalizedQuery))
+            );
+
+            renderCategories(filteredCategories);
+        }
+
+        function swapUnits() {
+            const fromVal = $fromUnit.value;
+            const toVal = $toUnit.value;
+            $fromUnit.value = toVal;
+            $toUnit.value = fromVal;
+            calculateConversion();
+        }
+
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            $html.classList.toggle('dark', isDarkMode);
+            localStorage.setItem('darkMode', isDarkMode);
+            updateDarkModeIcon();
+        }
+
+        function updateDarkModeIcon() {
+            $darkModeToggle.innerHTML = isDarkMode
+                ? `<!-- Sun Icon -->
+                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 transition-transform duration-500 rotate-180">
+                       <circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path>
+                   </svg>`
+                : `<!-- Moon Icon -->
+                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 transition-transform duration-500">
+                       <path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                   </svg>`;
+        }
+
+        function copyResult() {
+            const resultText = $resultValue.textContent;
+            if (resultText === '0' || resultText === 'Invalid' || resultText === 'Error') return;
+
+            const tempInput = document.createElement('textarea');
+            tempInput.value = resultText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            // Show status message
+            $statusMessage.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+            $statusMessage.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                $statusMessage.classList.remove('opacity-100', 'translate-y-0');
+                $statusMessage.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+            }, 2000);
+        }
+
+        // --- 5. INITIALIZATION ---
+
+        window.onload = function() {
+            // Dark Mode Setup
+            const storedDarkMode = localStorage.getItem('darkMode');
+            if (storedDarkMode !== null) {
+                isDarkMode = storedDarkMode === 'true';
+            } else {
+                isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+            $html.classList.toggle('dark', isDarkMode);
+            updateDarkModeIcon();
+            $darkModeToggle.addEventListener('click', toggleDarkMode);
+
+            // Render categories and select the default one
+            renderCategories();
+
+            $inputValue.focus();
+        };
+
+    </script>
+</body>
+</html>
